@@ -7,12 +7,13 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#28a745">
-<script>
-  const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) {
-    window.location.href = "index.html"; // If not logged in, send back to login
-  }
-</script>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      window.location.href = "index.html"; // Redirect if not logged in
+    }
+  </script>
 
   <script>
     if ('serviceWorker' in navigator) {
@@ -46,24 +47,25 @@
       color: white;
     }
     .logout {
-      margin-right: 8px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      background: #dc3545;
+      color: white;
+      margin-top: 10px;
     }
-    
+    .logout:hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
 <div class="container">
   <img src="icons/logo.png" alt="Rider Booking Logo" class="logo">
   <h2>Rider Dashboard</h2>
-  <input type="text" id="riderName" placeholder="Enter Rider Name" required>
+  <input type="text" id="riderName" placeholder="Enter Rider Name" required readonly>
   <button onclick="fetchOrders()">Refresh Orders</button>
+  <button class="logout" onclick="logout()">Logout</button>
   <div class="orders" id="orders"></div>
 </div>
-<button onclick="logout()">Logout</button>
+
 <script>
   function logout() {
     localStorage.removeItem("user");
@@ -76,6 +78,11 @@
   const SUPABASE_URL = "https://ojpwqzrilomrbhpuzenq.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcHdxenJpbG9tcmJocHV6ZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTQ0NDYsImV4cCI6MjA3Mjc3MDQ0Nn0.PK6-nRdWyCJKblbb4nW1cDqYo3uMCgXMW96bGdOcDYo";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auto-fill rider name
+    document.getElementById("riderName").value = user.name;
+  });
 
   async function fetchOrders() {
     const { data, error } = await supabase
@@ -99,8 +106,8 @@
         <p><strong>Pickup:</strong> ${order.pickup_location}</p>
         <p><strong>Drop-off:</strong> ${order.dropoff_location}</p>
         <p><strong>Status:</strong> ${order.status}</p>
-        ${order.status === "Pending" ? `<button class="accept-btn" onclick="acceptOrder(${order.id})">Accept</button>` : ""}
-        ${order.status === "Accepted" ? `<button class="finish-btn" onclick="finishOrder(${order.id})">Finish</button>` : ""}
+        ${order.status === "Pending" ? `<button class="accept-btn" onclick="acceptOrder('${order.id}')">Accept</button>` : ""}
+        ${order.status === "Accepted" ? `<button class="finish-btn" onclick="finishOrder('${order.id}')">Finish</button>` : ""}
       `;
       ordersDiv.appendChild(div);
     });
@@ -158,6 +165,3 @@
 </script>
 </body>
 </html>
-
-
-
