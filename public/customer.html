@@ -9,18 +9,11 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#28a745">
-<script>
-  const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) {
-    window.location.href = "index.html"; // If not logged in, send back to login
-  }
-</script>
 
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').then(() => {
-        console.log('Service Worker Registered');
-      });
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      window.location.href = "index.html";
     }
   </script>
 
@@ -50,6 +43,18 @@
     .order button:hover {
       background: #cc0000;
     }
+    .logout {
+      background: #dc3545;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .logout:hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -58,11 +63,11 @@
     <h2>Place an Order</h2>
 
     <form id="orderForm">
-      <input type="text" id="customerName" placeholder="Your Name" required>
+      <input type="text" id="customerName" placeholder="Your Name" readonly required>
       <input type="text" id="pickupLocation" placeholder="Pickup Address" required>
       <input type="text" id="dropoffLocation" placeholder="Drop-off Address" required>
       <textarea id="itemDescription" placeholder="Item Description" required></textarea>
-      <input type="text" id="contactNumber" placeholder="Contact Number" required>
+      <input type="text" id="contactNumber" placeholder="Contact Number" readonly required>
       <button type="submit">Submit Order</button>
     </form>
 
@@ -73,29 +78,35 @@
 
     <h3>Rider Location</h3>
     <div id="map"></div>
-  </div>
-<button onclick="logout()">Logout</button>
-<script>
-  function logout() {
-    localStorage.removeItem("user");
-    window.location.href = "index.html";
-  }
-</script>
 
-  <!-- Supabase SDK -->
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    function logout() {
+      localStorage.removeItem("user");
+      window.location.href = "index.html";
+    }
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://ojpwqzrilomrbhpuzenq.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcHdxenJpbG9tcmJocHV6ZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTQ0NDYsImV4cCI6MjA3Mjc3MDQ0Nn0.PK6-nRdWyCJKblbb4nW1cDqYo3uMCgXMW96bGdOcDYo";
-
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY"; // Replace with your key
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Initialize Leaflet Map
-    let map = L.map('map').setView([8.5412, 124.7548], 13); // Tagoloan area
+    document.addEventListener("DOMContentLoaded", () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (user) {
+        document.getElementById("customerName").value = user.name;
+        document.getElementById("contactNumber").value = user.phone;
+      }
+    });
+
+    let map = L.map('map').setView([8.5412, 124.7548], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     let riderMarker;
 
-    // Place order
     document.getElementById("orderForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -117,11 +128,12 @@
       }
     });
 
-    // Fetch orders
     async function fetchOrders() {
+      const user = JSON.parse(localStorage.getItem("user"));
       const { data, error } = await supabase
         .from("orders")
         .select("*")
+        .eq("contact_number", user.phone)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -141,11 +153,10 @@
           <p><strong>Drop-off:</strong> ${order.dropoff_location}</p>
           <p><strong>Status:</strong> ${order.status}</p>
           ${order.status === "Pending" || order.status === "Accepted" ? `
-            <button onclick="cancelOrder(${order.id})">Cancel</button>
+            <button onclick="cancelOrder('${order.id}')">Cancel</button>
           ` : ""}
         `;
 
-        // Update rider location on map
         if (order.rider_lat && order.rider_lng) {
           if (!riderMarker) {
             riderMarker = L.marker([order.rider_lat, order.rider_lng])
@@ -154,32 +165,25 @@
           } else {
             riderMarker.setLatLng([order.rider_lat, order.rider_lng]);
           }
+          map.setView([order.rider_lat, order.rider_lng], 15);
         }
 
         ordersDiv.appendChild(div);
       });
     }
 
-    // Cancel order
     async function cancelOrder(orderId) {
       await supabase.from("orders").update({ status: "Cancelled" }).eq("id", orderId);
       alert("Order cancelled.");
       fetchOrders();
     }
 
-    // Listen for realtime updates
     supabase
       .channel('orders-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => fetchOrders()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
       .subscribe();
 
     window.onload = fetchOrders;
   </script>
 </body>
 </html>
-
-
