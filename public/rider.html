@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rider Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#28a745">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').then(() => {
+        console.log('Service Worker Registered');
+      });
+    }
+  </script>
+</head>
+<body>
+<div class="container">
+  <img src="icons/logo.png" alt="Rider Booking Logo" class="logo">
+  <h2>Rider Dashboard</h2>
+  <input type="text" id="riderName" placeholder="Enter Rider Name" required>
+  <button onclick="fetchOrders()">Refresh Orders</button>
+  <div class="orders" id="orders"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://ojpwqzrilomrbhpuzenq.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcHdxenJpbG9tcmJocHV6ZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTQ0NDYsImV4cCI6MjA3Mjc3MDQ0Nn0.PK6-nRdWyCJKblbb4nW1cDqYo3uMCgXMW96bGdOcDYo";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function fetchOrders() {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const ordersDiv = document.getElementById("orders");
+    ordersDiv.innerHTML = "";
+
+    data.forEach(order => {
+      const div = document.createElement("div");
+      div.classList.add("order");
+      div.innerHTML = `
+        <p><strong>Customer:</strong> ${order.customer_name}</p>
+        <p><strong>Pickup:</strong> ${order.pickup_location}</p>
+        <p><strong>Drop-off:</strong> ${order.dropoff_location}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        ${order.status === "Pending" ? `<button onclick="acceptOrder(${order.id})">Accept</button>` : ""}
+        ${order.status === "Accepted" ? `<button onclick="finishOrder(${order.id})">Finish</button>` : ""}
+      `;
+      ordersDiv.appendChild(div);
+    });
+  }
+
+  async function acceptOrder(orderId) {
+    const riderName = document.getElementById("riderName").value.trim();
+    if (!riderName) return alert("Please enter your name first!");
+
+    await supabase
+      .from("orders")
+      .update({ status: "Accepted", rider_name: riderName })
+      .eq("id", orderId);
+
+    alert("Order accepted!");
+    fetchOrders();
+
+    // Start sending location every 5 seconds
+    setInterval(() => updateRiderLocation(orderId), 5000);
+  }
+
+  async function updateRiderLocation(orderId) {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      await supabase
+        .from("orders")
+        .update({ rider_lat: lat, rider_lng: lng })
+        .eq("id", orderId);
+    });
+  }
+
+  async function finishOrder(orderId) {
+    await supabase
+      .from("orders")
+      .update({ status: "Completed" })
+      .eq("id", orderId);
+
+    alert("Order finished!");
+    fetchOrders();
+  }
+
+  // Realtime subscription for new orders
+  supabase
+    .channel('orders-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      (payload) => {
+        console.log('Realtime update:', payload);
+        fetchOrders();
+      }
+    )
+    .subscribe();
+
+  window.onload = fetchOrders;
+</script>
+
+</body>
+</html>
