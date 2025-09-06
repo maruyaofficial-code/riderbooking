@@ -49,6 +49,13 @@
   <button onclick="fetchOrders()">Refresh Orders</button>
   <div class="orders" id="orders"></div>
 </div>
+<button onclick="logout()">Logout</button>
+<script>
+  function logout() {
+    localStorage.removeItem("user");
+    window.location.href = "index.html";
+  }
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -137,3 +144,4 @@
 </script>
 </body>
 </html>
+
