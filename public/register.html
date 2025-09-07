@@ -5,23 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer
+  ></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
       background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
+      font-family: Arial, sans-serif;
     }
     .container {
       max-width: 400px;
-      width: 90%;
+      margin: auto;
       background: white;
       padding: 20px;
       border-radius: 10px;
       text-align: center;
+      margin-top: 50px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .logo {
@@ -47,20 +49,14 @@
     .message {
       margin-top: 10px;
       font-weight: bold;
-      text-align: center;
-    }
-    .message.success {
-      color: green;
-    }
-    .message.error {
-      color: red;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <img src="icons/logo.png" alt="Logo" class="logo">
-    <h2>Create Account</h2>
+    <h2>Register</h2>
+    
     <form id="registerForm">
       <input type="text" id="name" placeholder="Full Name" required>
       <input type="text" id="phone" placeholder="Mobile Number" required>
@@ -69,66 +65,70 @@
         <option value="customer">Customer</option>
         <option value="rider">Rider</option>
       </select>
+
+      <!-- Cloudflare Turnstile -->
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAABzwjes4Jglk_tHs"></div>
+
       <button type="submit">Register</button>
     </form>
+    
     <div class="message" id="message"></div>
     <p>Already registered? <a href="index.html">Login Here</a></p>
   </div>
 
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase configuration
     const SUPABASE_URL = "https://ojpwqzrilomrbhpuzenq.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcHdxenJpbG9tcmJocHV6ZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTQ0NDYsImV4cCI6MjA3Mjc3MDQ0Nn0.PK6-nRdWyCJKblbb4nW1cDqYo3uMCgXMW96bGdOcDYo";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcHdxenJpbG9tcmJocHV6ZW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxOTQ0NDYsImV4cCI6MjA3Mjc3MDQ0Nn0.PK6-nRdWyCJKblbb4nW1cDqYo3uMCgXMW96bGdOcDYo"; // Replace with your actual anon key
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const form = document.getElementById("registerForm");
-    const message = document.getElementById("message");
-
-    form.addEventListener("submit", async function(e) {
+    document.getElementById("registerForm").addEventListener("submit", async function(e) {
       e.preventDefault();
+      const messageDiv = document.getElementById("message");
 
       const name = document.getElementById("name").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const role = document.getElementById("role").value;
 
       if (!name || !phone || !role) {
-        showMessage("All fields are required.", "error");
+        messageDiv.innerText = "Please fill out all fields.";
+        messageDiv.style.color = "red";
         return;
       }
 
-      // Check if phone already exists
-      const { data: existingUser, error: checkError } = await supabase
+      // Check if phone number already exists
+      const { data: existingUser } = await supabase
         .from("users")
         .select("phone")
         .eq("phone", phone)
         .single();
 
       if (existingUser) {
-        showMessage("This phone number is already registered.", "error");
+        messageDiv.innerText = "This phone number is already registered.";
+        messageDiv.style.color = "red";
         return;
       }
 
       // Insert new user
-      const { error } = await supabase
-        .from("users")
-        .insert([{ name, phone, role }]);
+      const { error } = await supabase.from("users").insert([
+        {
+          name: name,
+          phone: phone,
+          role: role
+        }
+      ]);
 
       if (error) {
-        showMessage("Registration failed: " + error.message, "error");
+        messageDiv.innerText = "Error: " + error.message;
+        messageDiv.style.color = "red";
       } else {
-        showMessage("Registration successful! Redirecting...", "success");
+        messageDiv.innerText = "Registration successful! Redirecting...";
+        messageDiv.style.color = "green";
+
         setTimeout(() => {
-          window.location.href = "index.html"; // Redirect to login
+          window.location.href = "index.html"; // Redirect to login page
         }, 2000);
       }
     });
-
-    function showMessage(msg, type) {
-      message.textContent = msg;
-      message.className = "message " + type;
-    }
   </script>
 </body>
 </html>
