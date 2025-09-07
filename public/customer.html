@@ -9,7 +9,11 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#28a745">
-
+  <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer
+  ></script>
   <script>
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
@@ -72,7 +76,8 @@
     </form>
 
     <div class="message" id="message"></div>
-
+   <!-- Cloudflare Turnstile -->
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAABzwjes4Jglk_tHs"></div>
     <h3>My Orders</h3>
     <div class="orders" id="customerOrders"></div>
 
@@ -187,3 +192,4 @@
   </script>
 </body>
 </html>
+
