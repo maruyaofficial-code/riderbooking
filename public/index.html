@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login</title>
   <link rel="stylesheet" href="css/style.css">
+   <script
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer
+  ></script>
   <style>
     .container {
       max-width: 400px;
@@ -53,6 +58,8 @@
       <input type="text" id="phone" placeholder="Mobile Number" required>
       <button type="submit">Login</button>
     </form>
+      <!-- Cloudflare Turnstile -->
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAABzwjes4Jglk_tHs"></div>
     <div class="message" id="message"></div>
     <p>Don't have an account? <a href="register.html">Register here</a></p>
   </div>
@@ -99,3 +106,4 @@
   </script>
 </body>
 </html>
+
