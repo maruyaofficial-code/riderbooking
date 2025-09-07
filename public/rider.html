@@ -64,13 +64,14 @@
 <div class="container">
   <img src="icons/logo.png" alt="Rider Booking Logo" class="logo">
   <h2>Rider Dashboard</h2>
+    <!-- Cloudflare Turnstile -->
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAABzwjes4Jglk_tHs"></div>
   <input type="text" id="riderName" placeholder="Enter Rider Name" required readonly>
   <button onclick="fetchOrders()">Refresh Orders</button>
   <button class="logout" onclick="logout()">Logout</button>
   <div class="orders" id="orders"></div>
 </div>
-        <!-- Cloudflare Turnstile -->
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAABzwjes4Jglk_tHs"></div>
+      
 
 <script>
   function logout() {
